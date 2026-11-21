@@ -528,7 +528,8 @@ async function main() {
   window.__startup = startup;
   const textPanel = document.getElementById('startup-text');
   const textCopy = document.getElementById('startup-copy');
-  const hint = document.getElementById('game-hint');
+  const hint = document.getElementById('game-hint-copy');
+  const repoLink = document.getElementById('repo-link');
   const continueButton = document.getElementById('continue');
   const soundButton = document.getElementById('sound-toggle');
   const pauseButton = document.getElementById('pause');
@@ -633,6 +634,7 @@ async function main() {
     syncMenu();
     const isScores = menu.mode === 'scores' || menu.mode === 'name';
     const text = startup.text;
+    repoLink.hidden = !startup.active || isScores || menu.mode === 'paused';
     textPanel.hidden = isScores || !text;
     if (text && textCopy.textContent !== text) textCopy.textContent = text;
     hint.textContent = isScores ? (menu.mode === 'name' ? 'Enter a name to record your score' : 'Top ten · stored locally in this browser')
@@ -783,6 +785,7 @@ async function main() {
       return;
     }
     if (e.target instanceof HTMLButtonElement && ['Enter', 'Space'].includes(e.code)) return;
+    if (e.target instanceof HTMLAnchorElement && e.code === 'Enter') return;
     if (menu.mode === 'paused') {
       if (e.code === 'Tab') return;
       e.preventDefault();
@@ -790,6 +793,7 @@ async function main() {
       return;
     }
     if (startup.active) {
+      if (e.code === 'Tab') return; // Reach the repository link and footer controls.
       e.preventDefault();
       if (!e.repeat) advanceStartup(e.code);
       return;

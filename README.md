@@ -10,7 +10,9 @@ controls and presentation.
 
 **This is a source-only repository for the port, not a distribution of the DOS
 game.** Original game files and generated assets are not included. You must supply
-your own lawfully obtained copy to generate the assets and play locally.
+your own copy to generate the assets and play locally.
+
+[Web Demo](https://grotz.me/cc/)
 
 ## Features and status
 

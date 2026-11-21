@@ -1,0 +1,13 @@
+{
+  "_comment": "Derived from the unpacked COMIC.EXE collision checks at image offsets 0x0dba and 0x0df4. The TT2 loader reads the file at DS:0x0c40 (image offset 0x3380); collision compares tile IDs against that first header byte with signed JG. All tile IDs greater than the cutoff are solid.",
+  "thresholdByArea": {
+    "BASE": 59,
+    "CASTLE": 72,
+    "CAVE": 9,
+    "COMP": 29,
+    "FOREST": 68,
+    "LAKE": 68,
+    "SHED": 23,
+    "SPACE": 71
+  }
+}

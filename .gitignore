@@ -1,0 +1,30 @@
+# Original third-party DOS game, data, graphics, audio tables and manual.
+/game files/
+
+# Generated derivatives, including graphics, sounds, maps and decoded game text.
+/web/assets/
+/rendered/
+
+# Executable-derived regression fixtures/reference traces (regenerate locally).
+/tests/fixtures/
+/docs/player_physics_traces.json
+
+# Historical screenshots and extracted player artwork outside generated folders.
+/screenshot*.png
+/tools/player_src.png
+
+# Original DOS resource formats/manual if copied outside "game files/".
+*.[eE][xX][eE]
+*.[eE][gG][aA]
+*.[tT][tT]2
+*.[pP][tT]
+*.[sS][hH][pP]
+[cC][oO][mM][iI][cC].[dD][oO][cC]
+
+# Game-created local state, not source files.
+[kK][eE][yY][sS].[dD][eE][fF]
+[cC][oO][mM][iI][cC].[hH][gG][hH]
+
+# Python-generated caches.
+__pycache__/
+*.py[cod]

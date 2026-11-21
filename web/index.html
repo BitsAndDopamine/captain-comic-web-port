@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Captain Comic — web port</title>
+<style>
+  html, body { margin: 0; background: #000; min-height: 100%; color: #aaa; }
+  body { display: grid; place-items: center; min-height: 100vh; font: 14px monospace; }
+  main { width: min(960px, 100vw); }
+  #display { position: relative; aspect-ratio: 8 / 5; width: var(--screen-width, 100%); margin-inline: auto; container-type: inline-size; }
+  canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; background: #000; }
+  #startup-text { position: absolute; inset: 0; box-sizing: border-box; display: grid; place-items: center; background: #000; color: #aaa; overflow: auto; padding: 2%; }
+  /* Scale the original 80-column text page as one block, even on narrow screens. */
+  #startup-copy { width: 80ch; margin: 0; font: 1.9cqw/1.2 monospace; white-space: pre; text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+  [hidden] { display: none !important; }
+  footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 6px; }
+  #game-hint { flex: 1; }
+  button { font: inherit; cursor: pointer; padding: 5px 12px; }
+  #scores-screen { position: absolute; inset: 0; color: #ff5; font-size: clamp(7px, 1.9cqw, 18px); }
+  #score-rows { position: absolute; top: 27%; left: 20%; right: 20%; margin: 0; padding: 0; list-style: none; }
+  #score-rows li { display: flex; justify-content: space-between; line-height: 1.3; white-space: pre; }
+  #score-rows li:first-child { margin-bottom: 0.5em; }
+  #score-rows .score-name { color: #5ff; }
+  #score-rows li > :last-child { color: #f55; }
+  #score-entry { position: absolute; top: 37%; left: 15%; right: 15%; background: #000; text-align: center; }
+  #score-entry p { margin: 0 0 0.5em; color: #55f; }
+  #score-entry label { color: #5f5; }
+  #score-entry input { font: inherit; width: 12ch; color: #aaa; background: #000; border: 1px solid #aaa; }
+  #score-entry button, #scores-screen button { font-size: inherit; padding: 0.15em 0.4em; }
+  #score-actions { position: absolute; top: 73%; left: 12%; right: 12%; text-align: center; }
+  #score-storage { margin: 0.25em 0; color: #000; font-size: 0.8em; }
+  #scores-title { position: absolute; top: 22%; width: 100%; margin: 0; text-align: center; font-size: 1em; color: #fff; }
+</style>
+<link rel="stylesheet" href="presentation.css">
+</head>
+<body>
+<main id="game-shell">
+  <div id="display">
+    <canvas id="screen" width="320" height="200" tabindex="0" aria-label="Captain Comic game screen"></canvas>
+    <section id="startup-text" aria-label="Original startup text" hidden><pre id="startup-copy"></pre></section>
+    <section id="scores-screen" role="dialog" aria-modal="true" aria-labelledby="scores-title" tabindex="-1" hidden>
+      <h2 id="scores-title">High scores</h2>
+      <ol id="score-rows" aria-label="Top ten scores"></ol>
+      <form id="score-entry" hidden>
+        <p>Great Score!</p>
+        <label for="score-name">Enter Your Name:</label>
+        <input id="score-name" name="name" maxlength="12" autocomplete="off" spellcheck="false">
+        <button type="submit">Record score</button>
+      </form>
+      <div id="score-actions">
+        <button id="score-board" type="button">Show practice scores</button>
+        <button id="score-close" type="button">Back</button>
+        <p id="score-storage" role="status"></p>
+      </div>
+    </section>
+  </div>
+  <footer><span id="game-hint" aria-live="polite">Loading original assets…</span><button id="sound-toggle" type="button" aria-pressed="false">Sound: on</button><button id="pause" type="button" hidden>Pause (Esc)</button><button id="high-scores" type="button">High scores</button><button id="quit" type="button" hidden>Quit to title</button><button id="continue" type="button" hidden>Continue</button><button id="fullscreen" type="button" aria-pressed="false">Fullscreen</button><button id="touch-toggle" type="button" aria-controls="touch-controls" aria-pressed="false">Touch: off</button></footer>
+  <section id="touch-controls" aria-label="Touch game controls" hidden>
+    <div class="touch-directions">
+      <button type="button" data-code="ArrowLeft" aria-label="Move left">←</button>
+      <button type="button" data-code="ArrowRight" aria-label="Move right">→</button>
+    </div>
+    <div class="touch-actions">
+      <button type="button" data-code="AltLeft" aria-label="Use door (requires Door Key)">Door</button>
+      <button type="button" data-code="CapsLock" aria-label="Teleport (requires Wand)">Wand</button>
+      <button type="button" data-code="ArrowUp" class="touch-primary" aria-label="Jump">Jump</button>
+      <button type="button" data-code="Space" class="touch-primary touch-fire" aria-label="Fire">Fire</button>
+    </div>
+  </section>
+  <p id="presentation-status" role="status" hidden></p>
+</main>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

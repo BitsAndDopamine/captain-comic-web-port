@@ -1,22 +1,137 @@
-# Captain Comic (1988) — original DOS shareware files
+# Captain Comic — Web Port
 
-This project contains the original data files of **The Adventures of Captain Comic**
-(Episode I: *Planet of Death*), a 1988 DOS shareware action-platformer by
-**Michael A. Denio** (3106 Twin Oaks Drive, Joliet, IL 60435).
+A native browser port of **The Adventures of Captain Comic**, Episode I:
+*Planet of Death*, originally created by **Michael A. Denio**.
 
-## Folder layout
+The game runs in vanilla JavaScript using Canvas and Web Audio—**not a DOS
+emulator**, with no npm dependencies or build step. The goal is to reproduce the
+original graphics, DOS-tick gameplay and progression while adding browser-friendly
+controls and presentation.
 
-Version control is **source-only**: `.gitignore` excludes the original DOS files,
-generated web assets/previews, game screenshots and executable-derived test data.
-These files can remain on your local disk; ignoring them does not delete them.
-Supply your own lawfully obtained original files in `game files/`, then run
-`python3 tools/export_web_assets.py` to generate the assets required to play.
+**This is a source-only repository for the port, not a distribution of the DOS
+game.** Original game files and generated assets are not included. You must supply
+your own lawfully obtained copy to generate the assets and play locally.
 
-For the complete test suite in a fresh checkout, regenerate the ignored reference
-data after exporting assets (these seven tools require the optional Python
-`unicorn` package):
+## Features and status
+
+- All eight areas, original enemies, tools, pickups, doors and linked playfields.
+- Original-style movement, combat, lives, shield/weapon energy and PC-speaker audio.
+- Startup screens, victory sequence, pause and browser-local high scores.
+- Fullscreen/expanded view and large multi-touch controls for mobile play.
+- Game-like EGA colors, pixel-art rendering and square, beveled website controls.
+- Reverse-engineering documentation and executable-backed regression tests.
+
+The port is playable but still under development. A complete DOS-versus-web
+playthrough and remaining same-tick edge cases still need verification. Continue
+resumes a paused run; **there is no gameplay save/load across page reloads**.
+Physical-device and native-fullscreen testing remain useful.
+
+## Run locally
+
+### Requirements
+
+- A modern browser with Canvas and Web Audio support.
+- Python 3 with `numpy` and `Pillow` for asset generation and the local HTTP server.
+- Original Episode I game files, supplied separately. The exporter was developed
+  against the Revision 5 files described in the technical reference below.
+- Node.js only if you want to run the JavaScript tests; it is not needed to play.
+
+### Setup
 
 ```sh
+git clone https://github.com/BitsAndDopamine/captain-comic-web-port.git
+cd captain-comic-web-port
+```
+
+With your preferred Python virtual environment activated, install the export
+dependencies:
+
+```sh
+python3 -m pip install numpy Pillow
+```
+
+Place the original files directly in a local `game files/` directory, keeping
+their original names (including uppercase filenames on case-sensitive systems).
+Do not modify the originals. Then generate the web assets and start the server:
+
+```sh
+python3 tools/export_web_assets.py
+python3 -m http.server 8791 --directory web
+```
+
+Open **http://localhost:8791/**. Serve the game over HTTP rather than opening
+`web/index.html` directly. A fresh checkout will not run until assets have been
+generated; simply deploying this source-only checkout to GitHub Pages is not a
+ready-to-play distribution.
+
+## Browser controls
+
+| Key | Action |
+|---|---|
+| Left / Right arrows | Walk |
+| Up arrow | Jump; higher with Boots |
+| Space | Fire; requires Blastola Cola |
+| Alt | Use a door; requires the reusable Door Key |
+| Caps Lock | Wand teleport while grounded |
+| Esc | Pause |
+| Continue / another key while paused | Resume |
+| Q while paused | Quit to the startup notice |
+| F1 / F2 | Sound on / off |
+
+Use the footer buttons for fullscreen, touch controls, pause, sound and high
+scores. Touch mode can be enabled manually or automatically on touch devices.
+These browser bindings differ from the original DOS defaults listed below.
+
+High scores are stored in this browser's localStorage, not on a server. Debug
+navigation and URL state grants use a separate practice board.
+
+For testing, try
+<http://localhost:8791/?items=all&colas=5&shield=6&skipIntro=1>.
+`all` grants the five tools, not treasures. Debug keys: `1`/`2`/`3` select a strip,
+`[`/`]` change area, and Backquote toggles the developer overlay. See
+[URL testing options](docs/testing_urls.md).
+
+## Repository layout and asset policy
+
+Included here: the web port's source, asset-export tools, tests and research
+documentation. `.gitignore` excludes original DOS files, generated web assets and
+previews, game screenshots, and executable-derived test fixtures. Those files can
+remain on your local disk; ignoring them does not delete them. A Python virtual
+environment should live outside the checkout or be explicitly ignored locally.
+
+The ignore rules cover known original/derived material, not arbitrary future
+files automatically. Review new files and their licensing before publishing.
+Generating assets does not grant permission to redistribute them. The original
+game, artwork, music and text remain the work of their respective rights holders;
+this repository does not grant a license to those materials.
+
+```
+captain-comic-web-port/
+├── web/                 ← native web game, no build step
+│   ├── index.html
+│   ├── presentation.css ← game-style website/mobile UI
+│   ├── src/             ← gameplay, rendering, audio and input modules
+│   └── assets/          ← generated locally; ignored
+├── tools/               ← asset exporters and optional original-code trace tools
+├── tests/               ← Python and browser-independent JavaScript regressions
+│   └── fixtures/        ← generated original-code traces; ignored
+├── docs/                ← mechanics research and browser-feature documentation
+├── game files/          ← original DOS inputs you supply; ignored
+├── rendered/            ← optional generated PNG previews; ignored
+├── .gitignore           ← source-only publication rules
+├── AGENTS.md            ← repo notes for coding agents
+└── README.md            ← this file
+```
+
+## Development and verification
+
+Export assets before testing. On a fresh checkout, also generate the ignored
+original-code reference data; these seven tools require the optional Python
+`unicorn` package:
+
+```sh
+python3 -m pip install unicorn
+python3 tools/export_web_assets.py
 python3 tools/trace_enemy_ai.py
 python3 tools/trace_doors.py
 python3 tools/trace_items.py
@@ -26,34 +141,31 @@ python3 tools/trace_video.py
 python3 tools/trace_pickups_and_death.py
 ```
 
-The rules exclude known original/derived material, not arbitrary future files
-automatically; review new files and their licensing before publishing.
+Then run the regressions:
 
-```
-captain_comic_web/
-├── game files/          ← the 54 original game files, untouched
-│   ├── COMIC.EXE        ← the game (MS-DOS MZ executable)
-│   ├── COMIC.DOC        ← the manual (plain text)
-│   ├── *.TT2 / *.PT     ← tilesets and playfield strips, 8 areas
-│   ├── *.SHP            ← 14 sprite files
-│   └── SYS*.EGA         ← 6 compressed system-graphics files
-├── rendered/            ← PNG previews decoded from the game files (generated)
-├── web/                 ← web port in progress (vanilla JS ES modules, no build step)
-│   ├── index.html
-│   ├── src/             ← game code (main.js, assets.js, …)
-│   └── assets/          ← generated web assets (see below)
-├── tools/
-│   ├── render_assets.py     ← produces rendered/ from game files/
-│   ├── export_web_assets.py ← produces web/assets/ from game files/
-│   ├── export_exe_assets.py ← original embedded sprites + world records
-│   └── export_audio.py      ← unpacks COMIC.EXE sound tables to WAV + JSON
-├── AGENTS.md            ← repo notes for coding agents
-└── README.md            ← this file
+```sh
+node --test tests/*.mjs
+python3 -m unittest discover -s tests
 ```
 
-## 7. Web port (in progress)
+Unicorn is only needed to regenerate the reference traces, not to export assets,
+play, or rerun tests once their reference data exists. After source/exporter
+changes, re-export assets, reload the browser and check for console errors and
+correctly colored graphics.
 
-Goal: a complete, native web application (canvas + WebAudio), **not** a DOS emulator.
+Feature and research guides:
+
+- [Player physics](docs/player_physics.md) and [enemy AI](docs/enemy_ai.md)
+- [Pickups, death and reset](docs/pickups_and_death.md)
+- [Lives and HUD](docs/lives_and_hud.md) and [item abilities](docs/item_abilities.md)
+- [Pause and high scores](docs/pause_and_scores.md) and [victory](docs/victory.md)
+- [Colors and transitions](docs/colors_and_transitions.md) and [action sounds](docs/action_sounds.md)
+- [Fullscreen and mobile controls](docs/fullscreen_and_touch.md)
+- [Reverse-engineering notes](docs/reverse_engineering.md)
+
+## Implementation details
+
+The following notes describe the current implementation and its asset pipeline.
 
 - Export assets: `python3 tools/export_web_assets.py` → `web/assets/`
   (tile sheets, level JSON per area, RGBA sprite sheets, `areas.json` with the
@@ -152,13 +264,20 @@ Goal: a complete, native web application (canvas + WebAudio), **not** a DOS emul
   scrolling, alongside jump boosts and Boots/SPACE gravity. [Physics research](docs/player_physics.md)
   documents the implementation and original-machine-code traces, including 1,572
   real-map cases and all door arrivals. Movement and combat share one tick clock.
+## Original-data technical reference
 
+<details>
+<summary>Local input inventory, original game notes and reverse-engineered formats</summary>
+
+The sections below document the **separately supplied local inputs**, not files
+included in this repository. They support the port's exporters and fidelity work.
+The tested original distribution identifies itself as follows:
 
 - `COMIC.EXE` banner: `Captain Comic I - Planet of Death, Version SH1.0` /
   `Copyright 1990 by Michael A. Denio`
 - `COMIC.DOC`: "Revision 5" (7/10/91); the in-game intro text says
   `Copyright 1988 - 91 by Michael A. Denio`
-- Requirements (per the docs/binary): IBM PC/XT/AT with an **EGA adapter with 256K**
+- Original DOS requirements (not requirements for the web port): IBM PC/XT/AT with an **EGA adapter with 256K**
   (or PS/2 with VGA), DOS, keyboard and optional joystick.
 
 Everything below was verified by inspecting the files and by decoding/rendering the
@@ -166,7 +285,7 @@ graphics (see `rendered/` and `tools/render_assets.py`).
 
 ---
 
-## 1. File inventory (54 files, all inside `game files/`)
+## 1. Expected local input inventory (54 files; not included)
 
 | File(s) | Size | What it is |
 |---|---|---|
@@ -175,17 +294,21 @@ graphics (see `rendered/` and `tools/render_assets.py`).
 | `game files/*.TT2` (8 files) | 4,100–11,140 B | Tilesets — one per area (see §3). |
 | `game files/*0.PT`, `*1.PT`, `*2.PT` (24 files) | 1,284 B each | Playfield strips — 3 per area (see §3). |
 | `game files/*.SHP` (14 files) | 480–960 B | Sprite sheets — enemies/projectiles (see §4). |
-| `game files/SYS000.EGA` … `SYS005.EGA` (6 files) | 8,344–16,735 B | System graphics (compressed; likely title/intro screens, font, HUD, player sprite). See §5. |
+| `game files/SYS000.EGA` … `SYS005.EGA` (6 files) | 8,344–16,735 B | Compressed system screens: title, story, ending, HUD, legend and high scores. Player sprites are embedded in the executable. See §5. |
 
-## 2. The game (from `game files/COMIC.DOC` and strings in `game files/COMIC.EXE`)
+## 2. Original game reference
+
+These notes describe Episode I and the original DOS controls, not the browser
+bindings above. Source: the locally supplied manual and executable.
 
 - **Story:** Captain Comic, galactic hero, must recover **three treasures** (rare gems,
   a sack of rare coins, a jeweled crown) stolen from the planet **Omsoc** and hidden on
   the remote planet **Tambi**.
 - **Structure:** 8 distinct areas on Tambi — Forest, Castle, Cave, Lake, Space, Base,
   Shed, and a computer/circuit-board area (`COMP`) — each with its own tileset, 3
-  playfield screens and its own enemy sprites. 4-way scrolling playfield, hidden rooms,
-  save/continue feature.
+  playfield strips and its own enemy sprites. The executable's advertisement for
+  4-way scrolling and save/continue describes **Episode II**, not implemented
+  Episode I features; no gameplay save/load path has been identified here.
 - **Controls (defaults, fully redefinable):** ←/→ or joystick to move, **Space** jump,
   **Ins** fire (needs Blastola Cola), **Alt** open door (needs Door Key),
   **Caps Lock** teleport (needs Wand), **Esc** pause/quit, **F1/F2** sound on/off.
@@ -368,5 +491,9 @@ What the areas look like (see images):
 
 ---
 
-*Documentation written from the files themselves; formats in §5 were reverse-engineered
-from the binary data and verified by rendering the assets to images.*
+*Original game credit: Michael A. Denio. The technical reference documents locally
+supplied files; formats in §5 were reverse-engineered and checked by rendering
+assets and comparing behavior with original-code traces. Original assets and
+generated derivatives are not part of this source-only repository.*
+
+</details>

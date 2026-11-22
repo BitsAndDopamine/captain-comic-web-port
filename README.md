@@ -1,6 +1,6 @@
 # Captain Comic — Web Port
 
-![game on a phone with touch control](/phone.png)
+![game on a phone with touch control](/phone.jpeg)
 
 A native browser port of **The Adventures of Captain Comic**, Episode I:
 *Planet of Death*, originally created by **Michael A. Denio**.

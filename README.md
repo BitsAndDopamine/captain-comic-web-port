@@ -8,7 +8,7 @@ A native browser port of **The Adventures of Captain Comic**, Episode I:
 *Planet of Death*, originally created by **Michael A. Denio**.
 
 The game runs in vanilla JavaScript using Canvas and Web Audio-**not a DOS
-emulator**. It has a full screen mode and you can toggle buttons to play on touch screens. You can test or cheat using [url parameters](/docs/testing_urls.md)
+emulator**. It has a full screen mode and you can toggle buttons to play on touch screens. You can test or cheat using [url parameters](/docs/testing_urls.md). 
 
 **This is a source-only repository for the port, not a distribution of the DOS
 game.** Original game files and generated assets are not included. You can supply

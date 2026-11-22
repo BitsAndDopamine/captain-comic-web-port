@@ -1,4 +1,4 @@
-# Captain Comic — Web Port
+# Captain Comic - Web Port
 
 <p align="center">
   <img width="400" src="phone.jpeg" />
@@ -7,13 +7,11 @@
 A native browser port of **The Adventures of Captain Comic**, Episode I:
 *Planet of Death*, originally created by **Michael A. Denio**.
 
-The game runs in vanilla JavaScript using Canvas and Web Audio—**not a DOS
-emulator**, with no npm dependencies or build step. The goal is to reproduce the
-original graphics, DOS-tick gameplay and progression while adding browser-friendly
-controls and presentation.
+The game runs in vanilla JavaScript using Canvas and Web Audio-**not a DOS
+emulator**.
 
 **This is a source-only repository for the port, not a distribution of the DOS
-game.** Original game files and generated assets are not included. You must supply
+game.** Original game files and generated assets are not included. You can supply
 your own copy to generate the assets and play locally.
 
 [Web Demo](https://grotz.me/cc/)
@@ -36,7 +34,6 @@ Physical-device and native-fullscreen testing remain useful.
 
 ### Requirements
 
-- A modern browser with Canvas and Web Audio support.
 - Python 3 with `numpy` and `Pillow` for asset generation and the local HTTP server.
 - Original Episode I game files, supplied separately. The exporter was developed
   against the Revision 5 files described in the technical reference below.
@@ -181,7 +178,7 @@ The following notes describe the current implementation and its asset pipeline.
   item/enemy legend → Tambi/HUD → teleport arrival. Press Enter or click Continue
   on the text pages; timed stages advance automatically. R shows the original
   registration text; K explains the browser controls. The original start is FOREST
-  strip 0 at sprite (112,96), camera x=24—not the former hand-placed x=545.
+  strip 0 at sprite (112,96), camera x=24-not the former hand-placed x=545.
 - Current milestone: all 8 areas render in-browser from the exported assets, and the
    player uses original DOS-tick movement (left/right walk, Up = variable-height jump, Space = fire,
    air momentum, original terrain probes, falling off the bottom = death, camera dead zone,
@@ -295,11 +292,11 @@ graphics (see `rendered/` and `tools/render_assets.py`).
 
 | File(s) | Size | What it is |
 |---|---|---|
-| `game files/COMIC.EXE` | 34,297 B | MS-DOS `MZ` executable — the game itself. Contains the intro/registration text (partly XOR-0x25 obfuscated), the per-area asset table, and references to runtime files `KEYS.DEF` (custom key setup) and `COMIC.HGH` (top-10 high scores) — these two are *created at runtime* and are not in this folder. Also references `%%sys000.ega` … `sys007.ega` (only 000–005 are present). |
+| `game files/COMIC.EXE` | 34,297 B | MS-DOS `MZ` executable - the game itself. Contains the intro/registration text (partly XOR-0x25 obfuscated), the per-area asset table, and references to runtime files `KEYS.DEF` (custom key setup) and `COMIC.HGH` (top-10 high scores) - these two are *created at runtime* and are not in this folder. Also references `%%sys000.ega` … `sys007.ega` (only 000–005 are present). |
 | `game files/COMIC.DOC` | 14,459 B | Plain-text manual: story, shareware terms, revision history (Rev 1 5/01/88 → Rev 5 7/10/91), startup instructions, full controls table, game rules, tool descriptions, hints, and a walkthrough of Level I (The Forest). |
-| `game files/*.TT2` (8 files) | 4,100–11,140 B | Tilesets — one per area (see §3). |
-| `game files/*0.PT`, `*1.PT`, `*2.PT` (24 files) | 1,284 B each | Playfield strips — 3 per area (see §3). |
-| `game files/*.SHP` (14 files) | 480–960 B | Sprite sheets — enemies/projectiles (see §4). |
+| `game files/*.TT2` (8 files) | 4,100–11,140 B | Tilesets - one per area (see §3). |
+| `game files/*0.PT`, `*1.PT`, `*2.PT` (24 files) | 1,284 B each | Playfield strips - 3 per area (see §3). |
+| `game files/*.SHP` (14 files) | 480–960 B | Sprite sheets - enemies/projectiles (see §4). |
 | `game files/SYS000.EGA` … `SYS005.EGA` (6 files) | 8,344–16,735 B | Compressed system screens: title, story, ending, HUD, legend and high scores. Player sprites are embedded in the executable. See §5. |
 
 ## 2. Original game reference
@@ -310,8 +307,8 @@ bindings above. Source: the locally supplied manual and executable.
 - **Story:** Captain Comic, galactic hero, must recover **three treasures** (rare gems,
   a sack of rare coins, a jeweled crown) stolen from the planet **Omsoc** and hidden on
   the remote planet **Tambi**.
-- **Structure:** 8 distinct areas on Tambi — Forest, Castle, Cave, Lake, Space, Base,
-  Shed, and a computer/circuit-board area (`COMP`) — each with its own tileset, 3
+- **Structure:** 8 distinct areas on Tambi - Forest, Castle, Cave, Lake, Space, Base,
+  Shed, and a computer/circuit-board area (`COMP`) - each with its own tileset, 3
   playfield strips and its own enemy sprites. The executable's advertisement for
   4-way scrolling and save/continue describes **Episode II**, not implemented
   Episode I features; no gameplay save/load path has been identified here.
@@ -368,7 +365,7 @@ there. (File names below are relative to `game files/`.)
 All graphics are **EGA planar, 4 bits/pixel** (bit *k* of the color index = plane *k*,
 MSB of each byte = leftmost pixel).
 
-- **`<AREA>.TT2` — tileset.** 4-byte header (dword, meaning not fully determined), then
+- **`<AREA>.TT2` - tileset.** 4-byte header (dword, meaning not fully determined), then
   `N` tiles of exactly 128 bytes each, where `N = (filesize − 4) / 128`. Each tile is
   16×16 px: 4 planes × 32 bytes (16 rows × 2 bytes per plane, planes stored consecutively).
   The first header byte is the collision cutoff used by the game: tile IDs greater than
@@ -386,17 +383,17 @@ MSB of each byte = leftmost pixel).
   | LAKE | 68 | 69–83 |
   | SHED | 23 | 24–31 |
   | SPACE | 71 | 72–80 |
-- **`<AREA><n>.PT` — playfield strip.** 4-byte header `80 00 0A 00` (= 128 × 10 as two
+- **`<AREA><n>.PT` - playfield strip.** 4-byte header `80 00 0A 00` (= 128 × 10 as two
   little-endian words), then 1280 bytes = a **128 × 10 grid of 1-byte tile indices** into
   the area's `.TT2` → 2048 × 160 px per strip. Each area has 3 strips (`0`, `1`, `2`).
-- **`*.SHP` — sprite.** Frames of 160 bytes (`frames = filesize / 160`). Each frame =
+- **`*.SHP` - sprite.** Frames of 160 bytes (`frames = filesize / 160`). Each frame =
   **4 color planes × 32 bytes, then a 32-byte AND mask**. Mask bit **1 is transparent**,
   0 is opaque. The blitter computes `(background & mask) | color`; opaque black must
   be preserved. The earlier mask-first/1-is-opaque interpretation was incorrect.
   Embedded 16×32 sprites use the same layout with 64 bytes per plane (320 bytes/frame).
-- **`SYS*.EGA` — system screens.** Each file is exactly one 320×200 EGA screen in a
+- **`SYS*.EGA` - system screens.** Each file is exactly one 320×200 EGA screen in a
   PackBits-like RLE: `[word planeSize=8000]` then 4 planes; each plane is a token
-  stream until `planeSize` bytes are produced — token `< 0x80` = literal run of
+  stream until `planeSize` bytes are produced - token `< 0x80` = literal run of
   `token` raw bytes, token `>= 0x80` = run of `token & 0x7F` copies of the next byte
   (reverse-engineered from the decompressor at image offset `0xA68` in `COMIC.EXE`).
    The 6 present files (`sys000–005`, referenced by the EXE as `%%sys000.ega` …
@@ -431,9 +428,9 @@ of the unpacked image, not external resources. Its EXEPACK header is at file off
 
 Run `python3 tools/export_audio.py` to write `web/assets/audio/`:
 
-- `sounds.json` — all 14 confirmed sequences, source locations, call sites, original
+- `sounds.json` - all 14 confirmed sequences, source locations, call sites, original
   divisor/tick pairs, and their WAV filenames.
-- `intro_theme.wav` and `sound_02.wav` … `sound_14.wav` — mono 22.05 kHz signed
+- `intro_theme.wav` and `sound_02.wav` … `sound_14.wav` - mono 22.05 kHz signed
   16-bit PCM renders of the original square-wave notes.
 - `web/src/audio.js` supplies `GameAudio` and the single-channel priority player.
   `unlock()` is called from a real key/click gesture to satisfy browser autoplay
@@ -471,28 +468,28 @@ every known sound-play call site. Full mapping: [action sounds](docs/action_soun
 Regenerate with `python3 tools/render_assets.py` (needs Python + numpy + Pillow).
 The script reads the game files from `game files/` and writes the PNGs to `rendered/`.
 
-- `areas_overview.png` — all 8 areas, downscaled, stacked
-- `level_<AREA>_all.png` — the 3 playfield strips of an area stacked (2048 × 480 px);
-  `level_<AREA>0/1/2.png` — the individual strips
-- `tiles_<AREA>.png` — each area's tile sheet
-- `shp_<NAME>.png`, `shp_all.png` — decoded sprites, frames side by side
+- `areas_overview.png` - all 8 areas, downscaled, stacked
+- `level_<AREA>_all.png` - the 3 playfield strips of an area stacked (2048 × 480 px);
+  `level_<AREA>0/1/2.png` - the individual strips
+- `tiles_<AREA>.png` - each area's tile sheet
+- `shp_<NAME>.png`, `shp_all.png` - decoded sprites, frames side by side
 
 What the areas look like (see images):
 
-- **Forest** — castle with blue spires, trees, a stone hill, fences, graveyard crosses,
+- **Forest** - castle with blue spires, trees, a stone hill, fences, graveyard crosses,
   and several red doors (the DOC's Level-I walkthrough mentions the "second door after
   the castle").
-- **Castle** — brick halls with arched windows, bookshelves, potted plants, torches,
+- **Castle** - brick halls with arched windows, bookshelves, potted plants, torches,
   stairs, doors and colored banners; tile sheet also holds items (sword, shield).
-- **Cave** — dark caverns with stalactites and platforms.
-- **Lake** — mountain lake with clouds, wooden piers, small buildings with red doors.
-- **Space** — starfield with planets and galaxies, asteroid platforms, a moon surface
+- **Cave** - dark caverns with stalactites and platforms.
+- **Lake** - mountain lake with clouds, wooden piers, small buildings with red doors.
+- **Space** - starfield with planets and galaxies, asteroid platforms, a moon surface
   with cacti, a launch tower and a small base.
-- **Base** — sci-fi base interior: circuit-pattern walls, consoles, windows showing
+- **Base** - sci-fi base interior: circuit-pattern walls, consoles, windows showing
   space with planets, red doors.
-- **Shed** — brick shed with landscape paintings on the walls, crystal clusters,
+- **Shed** - brick shed with landscape paintings on the walls, crystal clusters,
   red platforms.
-- **Computer (`COMP`)** — a circuit-board maze (traces, pipes, chips) with a green
+- **Computer (`COMP`)** - a circuit-board maze (traces, pipes, chips) with a green
   floor strip and a door.
 
 ---

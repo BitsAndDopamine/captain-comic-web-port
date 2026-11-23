@@ -22,6 +22,7 @@ your own copy to generate the assets and play locally.
 - Original-style movement, combat, lives, shield/weapon energy and PC-speaker audio.
 - Startup screens, victory sequence, pause and browser-local high scores.
 - Fullscreen/expanded view and large multi-touch controls for mobile play.
+- Startup keyboard remapping and USB/Bluetooth controllers via the Gamepad API.
 - Game-like EGA colors, pixel-art rendering and square, beveled website controls.
 - Reverse-engineering documentation and executable-backed regression tests.
 
@@ -84,6 +85,15 @@ ready-to-play distribution.
 Use the footer buttons for fullscreen, touch controls, pause, sound and high
 scores. Touch mode can be enabled manually or automatically on touch devices.
 These browser bindings differ from the original DOS defaults listed below.
+
+At the initial notice, press **K** (or **Keyboard (K)**) to change keyboard
+definitions, or **J** (or **Controller (J)**) to set up a USB/Bluetooth controller.
+Settings are saved in this browser. The controller's left stick/D-pad moves;
+standard defaults are A/Cross = jump, X/Square = fire, B/Circle = door,
+Y/Triangle = Wand, and Start/Options = pause/resume. Other button/axis mappings can
+be assigned in the J menu. Browser detection may require HTTPS/localhost, focus
+and a controller button press. Keyboard and touch remain usable alongside it.
+See [Keyboard and controllers](docs/keyboard_and_controllers.md).
 
 High scores are stored in this browser's localStorage, not on a server. Debug
 navigation and URL state grants use a separate practice board.
@@ -164,6 +174,7 @@ Feature and research guides:
 - [Pause and high scores](docs/pause_and_scores.md) and [victory](docs/victory.md)
 - [Colors and transitions](docs/colors_and_transitions.md) and [action sounds](docs/action_sounds.md)
 - [Fullscreen and mobile controls](docs/fullscreen_and_touch.md)
+- [Keyboard definitions and controllers](docs/keyboard_and_controllers.md)
 - [Reverse-engineering notes](docs/reverse_engineering.md)
 
 ## Implementation details
@@ -177,7 +188,7 @@ The following notes describe the current implementation and its asset pipeline.
 - Startup now follows the original code: shareware notice → title → story →
   item/enemy legend → Tambi/HUD → teleport arrival. Press Enter or click Continue
   on the text pages; timed stages advance automatically. R shows the original
-  registration text; K explains the browser controls. The original start is FOREST
+  registration text; K opens keyboard definitions and J opens controller setup. The original start is FOREST
   strip 0 at sprite (112,96), camera x=24-not the former hand-placed x=545.
 - Current milestone: all 8 areas render in-browser from the exported assets, and the
    player uses original DOS-tick movement (left/right walk, Up = variable-height jump, Space = fire,
@@ -211,6 +222,9 @@ The following notes describe the current implementation and its asset pipeline.
   geometry matches SYS003 pixel-for-pixel. Fireballs use two embedded 16×8 EXE frames
   in `sprites/FIREBALL.png`; Cola controls up to five simultaneous shots, and
   Corkscrew toggles their vertical path. The web build follows the DOS timer cadence.
+  As an intentional web-port improvement, shots remain active until their whole
+  sprite is more than 20 logical pixels outside either visible playfield edge,
+  instead of disappearing at the original executable's narrower cutoff.
 - Boots now supply the original extra jump boost (56px → 72px held jump); Wand
   teleports while grounded with **Caps Lock**, original target search, effects and
   sound; Lantern reveals Castle terrain without changing collision. See

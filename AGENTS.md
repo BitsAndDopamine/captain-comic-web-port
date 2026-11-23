@@ -3,7 +3,7 @@
 ## What this is
 - Original 1988 DOS shareware release of *The Adventures of Captain Comic* (Episode I,
   "Planet of Death") by Michael A. Denio, plus docs and one Python script.
-- **Not a git repo.** No package manager or build system. Export verification tests:
+- Source-only Git repo. No package manager or build system. Export verification tests:
   `python3 -m unittest discover -s tests` (run the web exporter first).
   Door interaction regressions: `node --test tests/test_doors.mjs`.
   All browser-independent JS regressions: `node --test tests/*.mjs`.
@@ -42,6 +42,16 @@
 - Cancel gameplay key defaults on both keydown and keyup (`controls.js`): Alt's
   release can activate the Firefox/Linux menu bar and steal input after a door.
   Score/name menus retain native keyboard behavior; do not force focus every frame.
+- Startup K/J open `input_setup.js` keyboard definitions / Gamepad API setup.
+  `KeyboardBindings` persists six unique physical-key mappings; touch codes remain
+  canonical. `gamepad.js` supplements keyboard/touch, supports button learning and
+  horizontal-axis selection, and disarms until neutral on focus/reset/reconnect.
+  Disconnect pauses active runs. Poll at browser frame rate and queue edges until
+  a simulation step; do not release one input source when another source releases.
+  LocalStorage keys `captain-comic.keyboard.v1` / `captain-comic.gamepad.v1` have
+  validated defaults and in-memory fallback. Setup is viewport-level, traps focus,
+  makes the game inert and freezes startup. `__inputSetup`, `__keyboardBindings`,
+  `__gamepad` exposed. See `docs/keyboard_and_controllers.md` and input-settings tests.
 - View/input: `presentation.js` handles Fullscreen API (entire #game-shell) and
   labelled CSS expanded fallback, including a1.8s timeout for hung host APIs.
   `touch_controls.js` tracks each pointer separately; `gameplayInput` combines it
@@ -154,6 +164,9 @@
   from DS:8240/8290. Original capacity (DS:48) and weapon energy (DS:49) start at 0;
   Cola raises capacity to 5, Corkscrew is DS:4b. Web firing uses the ~18.2 Hz DOS
   timer model, as do enemies. Enemy contact precedes projectile movement/hits.
+  User-requested range deviation: keep shots alive until the whole sprite is more
+  than20px outside either visible playfield edge. `Fireball.tick` takes actual PF.w;
+  do not restore the EXE's narrower0..22-unit cutoff. Offscreen hits remain active.
 - Player movement in `player.js` / `vertical_motion.js` uses the shared combat DOS
   clock: 8px steps, grounded turn-before-walk, signed air momentum, knee-height wall
   probes, Boots' boost (56px →72px), SPACE gravity and head/landing probes. Camera

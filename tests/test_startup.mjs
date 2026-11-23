@@ -8,7 +8,7 @@ const config = JSON.parse(readFileSync(new URL('../web/assets/startup.json', imp
 const sprites = JSON.parse(readFileSync(new URL('../web/assets/sprites.json', import.meta.url)));
 const tick = 1 / config.timerTicksPerSecond;
 
-test('notice, registration and browser controls retain the original text', () => {
+test('notice/registration retain original text; K/J request separate input setup menus', () => {
   const startup = new Startup(config);
   assert.match(startup.text, /Revision 5/);
   assert.match(startup.text, /Shareware/);
@@ -16,10 +16,10 @@ test('notice, registration and browser controls retain the original text', () =>
   assert.equal(startup.text, config.registration);
   startup.press('Enter');
   assert.equal(startup.text, config.notice);
-  startup.press('KeyK');
-  assert.match(startup.text, /Up arrow: jump/);
-  assert.match(startup.text, /Space: fire/);
-  startup.press('Enter');
+  assert.equal(startup.press('KeyK'), 'keyboard');
+  assert.equal(startup.press('KeyJ'), 'gamepad');
+  assert.equal(startup.text, config.notice);
+  assert.equal(startup.textPage, null);
   assert.equal(startup.stage.id, 'notice');
 });
 

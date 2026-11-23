@@ -20,7 +20,7 @@ export class Fireball {
     this.frame = 0; this.frameTick = 0;
     this.alive = true;
   }
-  tick(world, cameraX) {
+  tick(world, cameraX, playfieldWidth = 196) {
     if (!this.alive) return;
     // PIT/timer logic moves 2 eight-pixel coordinate units per ~18.2 Hz tick.
     const unit = this.config.coordinateUnitPixels ?? 8;
@@ -32,8 +32,10 @@ export class Fireball {
         this.waveTicks = this.config.corkscrewWavePeriodTicks ?? 2;
       }
     }
-    const screenXUnits = Math.floor((this.x - cameraX) / unit);
-    if (screenXUnits < 0 || screenXUnits > (this.config.maxCameraXUnits ?? 22)) {
+    // Web-port range extension: retain the whole sprite through the edge and
+    // another 20px beyond it. Use pixels, not the EXE's 0..22-unit draw window.
+    const screenX = this.x - cameraX;
+    if (screenX + this.w < -20 || screenX > playfieldWidth + 20) {
       this.alive = false;
       return;
     }

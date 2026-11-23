@@ -81,8 +81,13 @@ These are **not generic AABB overlaps**:
 - The supplied executable moves shots, then removes those outside camera-relative
   X=0..22 units **before** testing hits (`0x2054..0x2078`, then `0x20d1`).
   Enemy drawing uses the same 0..22 top-left window, but the one-unit hit tolerance
-  permits hitting an undrawn enemy at X=-1 or 23. Shots do not keep flying farther
-  offscreen in this version; increasing that range would be a gameplay deviation.
+  permits hitting an undrawn enemy at X=-1 or 23 in the original.
+- **Intentional web-port deviation, requested for playability:** shots remain
+  active until their entire sprite is more than 20 logical pixels outside the
+  current visible playfield, in either direction. Culling uses sprite bounds and
+  the actual playfield width, not the original 0..22-unit cutoff. Rendering stays
+  clipped to the playfield, but hits still work inside this offscreen margin.
+  Speed, animation, Corkscrew motion and hit windows are unchanged.
 - Contact consumes shield (or kills Comic if already empty) and starts a different
   five-frame effect from a shot. Slot recycling follows; enemies aren't permanently
   deleted. The original body remains behind the first three effect frames.

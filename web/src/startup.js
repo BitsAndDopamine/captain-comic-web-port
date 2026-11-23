@@ -26,9 +26,6 @@ export class Startup {
   }
   get text() {
     if (this.textPage === 'registration') return this.config.registration;
-    if (this.textPage === 'controls') {
-      return 'Browser controls\n\nLeft/Right arrows: move\nUp arrow: jump (higher with Boots)\nSpace: fire (requires Blastola Cola)\nAlt: use door (requires Door Key)\nCaps Lock: teleport (requires Wand)\nEsc: pause; any other key / Continue resumes\nWhile paused, Q quits to title\nHigh scores: footer button (saved in this browser)\n\nThe DOS keyboard-definition and joystick menus are not emulated.\n\nPress any key or click Continue to return.';
-    }
     if (this.textPage === 'exit') return 'Press any key or click Continue to return to the start menu.';
     return this.stage?.id === 'notice' ? this.config.notice : null;
   }
@@ -46,7 +43,8 @@ export class Startup {
     if (this.textPage) { this.textPage = null; return null; }
     if (this.stage.id === 'notice') {
       if (code === 'KeyR') { this.textPage = 'registration'; return null; }
-      if (code === 'KeyK' || code === 'KeyJ') { this.textPage = 'controls'; return null; }
+      if (code === 'KeyK') return 'keyboard';
+      if (code === 'KeyJ') return 'gamepad';
       if (code === 'Escape') { this.textPage = 'exit'; return null; }
       this.advance();
       return 'theme';
@@ -83,7 +81,7 @@ export class Startup {
   get hint() {
     if (this.textPage) return 'Press any key or click Continue to return';
     switch (this.stage?.id) {
-      case 'notice': return 'Enter / click Continue to begin · R: registration · K: browser controls';
+      case 'notice': return 'Enter / Continue to begin · R: registration · K: keyboard · J: controller';
       case 'title': return 'The Adventures of Captain Comic';
       case 'story': return this.canAdvance ? 'Press any key or click Continue' : 'The story of Captain Comic…';
       case 'legend': return 'Press any key or click Continue';

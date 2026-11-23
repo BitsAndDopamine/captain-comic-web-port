@@ -15,7 +15,7 @@ test('Up jumps and Space fires independently or together', () => {
 });
 
 test('touch and keyboard sources combine without releasing each other', () => {
-const keyboard = new Set(['ArrowRight', 'Space']), touch = new TouchState();
+  const keyboard = new Set(['ArrowRight', 'Space']), touch = new TouchState();
   touch.press(1, 'ArrowRight'); touch.press(2, 'ArrowUp'); touch.press(3, 'Space');
   assert.deepEqual(gameplayInput(keyboard, { jumpPressed: true }, touch), {
     left: false, right: true, jump: true, fire: true,

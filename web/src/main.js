@@ -16,7 +16,9 @@ import { LifeSystem, drawLifeIcons, drawEnergyCells, drawFireballCapacity } from
 import { GameAudio } from './audio.js';
 import { terrainIsDark, spritePosition, placeSprite, wandDestination, drawWandEffects } from './items.js';
 import { parseTestOptions, applyTestOptions } from './test_options.js';
-import { CONTROLS, gameplayInput, preventGameplayKeyDefault } from './controls.js';
+import { DEFAULT_BINDINGS, KeyboardBindings, actionForKey, actionHeld, keyLabel, gameplayInput, preventGameplayKeyDefault } from './controls.js';
+import { GamepadInput } from './gamepad.js';
+import { InputSetup } from './input_setup.js';
 import { HighScores, RunMenu, isPracticeSetup, SCORE_LIMIT } from './high_scores.js';
 import { Victory, hasAllTreasures } from './victory.js';
 import { createPaletteScreens } from './palette.js';
@@ -390,7 +392,7 @@ export class Game {
           if (this.life.takeHit()) { p.dead = true; return false; }
         });
       if (p.dead) { this.kill('enemy'); return; }
-      for (const f of this.fireballs) f.tick(this.world, this.camX);
+      for (const f of this.fireballs) f.tick(this.world, this.camX, PF.w);
       // Original projectile hit windows use sprite coordinate units (0x20ed).
       for (const f of this.fireballs) {
         if (!f.alive) continue;
@@ -546,6 +548,10 @@ async function main() {
   const touchButton = document.getElementById('touch-toggle');
   let storage = null;
   try { storage = window.localStorage; } catch { /* Private/blocked storage: keep scores in memory. */ }
+  const keyboard = new KeyboardBindings(storage);
+  const gamepad = new GamepadInput(storage);
+  window.__keyboardBindings = keyboard;
+  window.__gamepad = gamepad;
   const scores = new HighScores(storage), menu = new RunMenu(scores);
   window.__menu = menu;
   let menuSignature = '';
@@ -558,6 +564,8 @@ async function main() {
       audio.playEvent('intro');
     } else if (action === 'stopTheme') {
       audio.stop();
+    } else if (action === 'keyboard' || action === 'gamepad') {
+      inputSetup.open(action);
     }
   }
   continueButton.addEventListener('click', () => {
@@ -597,8 +605,8 @@ async function main() {
   });
 
   function syncMenu() {
-    game.paused = menu.frozen;
-    touchControls.setEnabled(presentation.touchEnabled && !startup.active && !menu.frozen
+    game.paused = menu.frozen || inputSetup.active;
+    touchControls.setEnabled(presentation.touchEnabled && !startup.active && !menu.frozen && !inputSetup.active
       && !game.runEnded && !game.victory?.active && !game.doorTransition && !game.deathTransition);
     const isScores = menu.mode === 'scores' || menu.mode === 'name';
     scoresPanel.hidden = !isScores;
@@ -634,8 +642,8 @@ async function main() {
     syncMenu();
     const isScores = menu.mode === 'scores' || menu.mode === 'name';
     const text = startup.text;
-    repoLink.hidden = !startup.active || isScores || menu.mode === 'paused';
-    textPanel.hidden = isScores || !text;
+    repoLink.hidden = !startup.active || isScores || inputSetup.active || menu.mode === 'paused';
+    textPanel.hidden = isScores || inputSetup.active || !text;
     if (text && textCopy.textContent !== text) textCopy.textContent = text;
     hint.textContent = isScores ? (menu.mode === 'name' ? 'Enter a name to record your score' : 'Top ten · stored locally in this browser')
       : menu.mode === 'paused' ? 'Paused · Q: quit to title · Any other key / Continue: resume'
@@ -651,13 +659,17 @@ async function main() {
         : game.victory?.active ? (game.victory.canAdvance ? 'Mission complete · Continue' : 'Returning home…')
         : 'Move · Jump · Fire · Door · Wand';
     }
+    if (!startup.active && !isScores && menu.mode !== 'paused' && !game.runEnded && !game.victory?.active && !presentation.touchEnabled) {
+      const b = keyboard.bindings;
+      hint.textContent = `${keyLabel(b.left)} / ${keyLabel(b.right)} Move · ${keyLabel(b.jump)} Jump · ${keyLabel(b.fire)} Fire · ${keyLabel(b.door)} Door · ${keyLabel(b.teleport)} Wand · Esc Pause`;
+    }
     const endingPage = !startup.active && game.victory?.stage === 'ending';
-    continueButton.hidden = isScores || (!startup.active && !game.runEnded && !endingPage && menu.mode !== 'paused');
+    continueButton.hidden = inputSetup.active || isScores || (!startup.active && !game.runEnded && !endingPage && menu.mode !== 'paused');
     continueButton.textContent = game.runEnded ? (menu.finished ? 'New game' : 'High scores') : 'Continue';
     continueButton.disabled = !game.runEnded && menu.mode !== 'paused' && !(endingPage && game.victory.canAdvance)
       && !startup.canAdvance;
     pauseButton.hidden = isScores || startup.active || game.runEnded || menu.mode === 'paused';
-    scoresButton.hidden = isScores;
+    scoresButton.hidden = isScores || inputSetup.active;
     quitButton.hidden = menu.mode !== 'paused';
     soundButton.hidden = isScores;
     fullscreenButton.hidden = isScores;
@@ -699,16 +711,18 @@ async function main() {
 
   const keys = new Set();
   window.__keys = keys;
+  let padState = {};
   let jumpPressed = false;
   let doorPressed = false;
   let teleportPressed = false;
   const touchControls = new TouchControls(document.getElementById('touch-controls'), {
     onGesture: () => audio.unlock(),
     onPress(code) {
-      if (keys.has(code)) return;
-      if (code === CONTROLS.jump) jumpPressed = true;
-      if (code === 'AltLeft') doorPressed = true;
-      if (code === 'CapsLock') teleportPressed = true;
+      const action = actionForKey(code, DEFAULT_BINDINGS);
+      if (actionHeld(action, keys, null, keyboard.bindings, padState)) return;
+      if (action === 'jump') jumpPressed = true;
+      if (action === 'door') doorPressed = true;
+      if (action === 'teleport') teleportPressed = true;
     },
   });
   const presentation = new Presentation({
@@ -719,10 +733,23 @@ async function main() {
   });
   window.__touchControls = touchControls;
   window.__presentation = presentation;
+  const inputSetup = new InputSetup(document.getElementById('input-setup'), keyboard, gamepad, {
+    onOpen() { clearInput(); resetClock(); audio.stop(); },
+    onClose() { clearInput(); resetClock(); canvas.focus(); },
+  });
+  window.__inputSetup = inputSetup;
+  // Mouse/touch users can reach the same startup menus without a physical K/J key.
+  const setupButtons = ['keyboard', 'gamepad'].map(mode => {
+    const button = document.createElement('button'); button.type = 'button'; button.id = `${mode}-setup`;
+    button.textContent = mode === 'keyboard' ? 'Keyboard (K)' : 'Controller (J)';
+    button.addEventListener('click', () => inputSetup.open(mode));
+    document.querySelector('footer').append(button); return button;
+  });
   function clearInput() {
     keys.clear(); jumpPressed = false; doorPressed = false; teleportPressed = false;
     touchControls.clear();
     game.player.jumpQueued = false;
+    gamepad.reset(); padState = {};
   }
   function resetClock() { acc = 0; last = performance.now(); }
   function freezeInput() { clearInput(); resetClock(); audio.stop(); syncMenu(); }
@@ -759,6 +786,8 @@ async function main() {
     gameRenderTime = 0;
   }
   addEventListener('keydown', e => {
+    if (inputSetup.active) { inputSetup.keydown(e); return; }
+    if (e.ctrlKey || e.metaKey) return; // Remaps must not swallow browser shortcuts.
     if (e.code === 'Escape' && presentation.handleEscape()) {
       if (!presentation.nativeFullscreen) e.preventDefault();
       return;
@@ -809,12 +838,13 @@ async function main() {
       if (!e.repeat && game.victory.canAdvance) advanceEnding();
       return;
     }
-    preventGameplayKeyDefault(e);
+    preventGameplayKeyDefault(e, keyboard.bindings);
     if (e.repeat && !keys.has(e.code)) return; // Held keys cleared by pause need a fresh press.
-    const held = keys.has(e.code) || touchControls.has(e.code);
-    if (e.code === CONTROLS.jump && !held) jumpPressed = true;
-    if (['AltLeft', 'AltRight'].includes(e.code) && !held) doorPressed = true;
-    if (e.code === 'CapsLock' && !held && !e.repeat) teleportPressed = true;
+    const action = actionForKey(e.code, keyboard.bindings);
+    const held = actionHeld(action, keys, touchControls, keyboard.bindings, padState);
+    if (action === 'jump' && !held) jumpPressed = true;
+    if (action === 'door' && !held) doorPressed = true;
+    if (action === 'teleport' && !held && !e.repeat) teleportPressed = true;
     keys.add(e.code);
     if (e.code === 'Digit1') { game.practice = true; game.loadStrip(0); }
     if (e.code === 'Digit2') { game.practice = true; game.loadStrip(1); }
@@ -824,27 +854,71 @@ async function main() {
     if (e.code === 'Backquote') game.showDebug = !game.showDebug;
   });
   addEventListener('keyup', e => {
-    if (menu.mode !== 'name' && menu.mode !== 'scores') preventGameplayKeyDefault(e);
+    if (inputSetup.cancelledKeys.delete(e.code)) e.preventDefault();
+    else if (!inputSetup.active && menu.mode !== 'name' && menu.mode !== 'scores') preventGameplayKeyDefault(e, keyboard.bindings);
     keys.delete(e.code);
   });
   addEventListener('blur', () => { clearInput(); pauseGame(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInput(); pauseGame(); } });
 
   let last = performance.now(), acc = 0;
+  function pollController() {
+    const before = Object.fromEntries(Object.keys(DEFAULT_BINDINGS).map(action =>
+      [action, actionHeld(action, keys, touchControls, keyboard.bindings, padState)]));
+    const sample = gamepad.poll(!document.hidden && document.hasFocus());
+    padState = sample.state;
+    const wasSetup = inputSetup.active;
+    inputSetup.updatePad(sample);
+    if (sample.disconnected) { clearInput(); pauseGame(); return; }
+    if (wasSetup || inputSetup.active) return; // Closing setup must not also start the game.
+    const edge = sample.edges;
+    if (menu.mode === 'scores') {
+      if (edge.jump || edge.fire) scoreClose.click();
+      return;
+    }
+    if (menu.mode === 'name') return; // Names still use native text entry.
+    if (startup.active) {
+      if (edge.jump || edge.pause) { audio.unlock(); advanceStartup('Enter'); }
+      return;
+    }
+    if (game.runEnded) {
+      if (edge.jump || edge.pause) { audio.unlock(); acknowledgeGameOver(); }
+      return;
+    }
+    if (edge.pause || (menu.mode === 'paused' && edge.jump)) {
+      audio.unlock();
+      if (menu.mode === 'paused') resumeGame(); else pauseGame();
+      return;
+    }
+    if (menu.frozen) return;
+    if (game.victory?.active) {
+      if (edge.jump && game.victory.canAdvance) advanceEnding();
+      return;
+    }
+    if (edge.jump && !before.jump) jumpPressed = true;
+    if (edge.door && !before.door) doorPressed = true;
+    if (edge.teleport && !before.teleport) teleportPressed = true;
+  }
   function frame(now) {
+    pollController();
+    for (const button of setupButtons) button.hidden = inputSetup.active || menu.frozen || !startup.active
+      || startup.stage.id !== 'notice' || Boolean(startup.textPage);
     const dt = Math.max(0, Math.min((now - last) / 1000, 0.25));
     last = now;
     acc += dt;
     while (acc >= STEP) {
-      if (menu.frozen) { /* Discard elapsed time: never catch up after Continue. */ }
-      else if (startup.active) startup.step(STEP);
+      if (menu.frozen || inputSetup.active) { /* Discard elapsed time: never catch up after Continue. */ }
+      else if (startup.active) {
+        startup.step(STEP);
+        if (!startup.active) clearInput();
+      }
       else {
         gameRenderTime += STEP * 1000;
         game.step(gameplayInput(keys, {
         jumpPressed,
         doorPressed,
         teleportPressed,
-        }, touchControls));
+        }, touchControls, keyboard.bindings, padState));
       }
       jumpPressed = false;
       doorPressed = false;

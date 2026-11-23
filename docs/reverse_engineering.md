@@ -390,7 +390,8 @@ at DS:75b3 (image `0x09cf3`) as bytes `0c 0e` (Y=12, X=14). The camera formula a
 The browser displays the original graphic PNGs at native logical resolution and
 uses the original screen order and timer cadence. It shows original notice and
 registration text in a readable DOM text panel, not a DOS text-mode emulator.
-K/J explain the fixed browser controls instead of emulating hardware configuration;
+K/J open browser keyboard remapping / Gamepad API controller setup (see
+[Keyboard and controllers](keyboard_and_controllers.md)), not DOS hardware emulation;
 Escape returns to the menu rather than closing the browser. The original five-step
 palette reveal is applied to title/story/ending using mode 0Dh's 200-line RGBI
 mapping, not the independent 350-line EGA RGB mapping. See

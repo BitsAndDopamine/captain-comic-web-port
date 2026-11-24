@@ -11,7 +11,7 @@ import { DeathSequence } from './death.js';
 import { EnemySystem, playerSpriteUnits, fireballEnemyContact } from './enemies.js';
 import { doorAtPlayer, doorArrival, doorAnimationFrame, drawDoorOpening } from './doors.js';
 import { Startup, initialPlayerPosition } from './startup.js';
-import { drawTilemap } from './tilemap.js';
+import { drawTilemap, renderCameraX } from './tilemap.js';
 import { LifeSystem, drawLifeIcons, drawEnergyCells, drawFireballCapacity } from './lives.js';
 import { GameAudio } from './audio.js';
 import { terrainIsDark, spritePosition, placeSprite, wandDestination, drawWandEffects } from './items.js';
@@ -392,7 +392,7 @@ export class Game {
           if (this.life.takeHit()) { p.dead = true; return false; }
         });
       if (p.dead) { this.kill('enemy'); return; }
-      for (const f of this.fireballs) f.tick(this.world, this.camX, PF.w);
+      for (const f of this.fireballs) f.tick(this.world, renderCameraX(this.camX, this.world.wPx, PF.w), PF.w);
       // Original projectile hit windows use sprite coordinate units (0x20ed).
       for (const f of this.fireballs) {
         if (!f.alive) continue;
@@ -419,7 +419,7 @@ export class Game {
     const entitiesVisible = worldActive && !this.runEnded && (!death || death.stage === 'explosion');
     const H = this.assets.hud;
     // Snap rendering only, once for every layer; physics keeps the precise camera.
-    const camX = Math.round(this.camX), camY = Math.round(this.camY);
+    const camX = renderCameraX(this.camX, this.world.wPx, PF.w), camY = Math.round(this.camY);
     // base: the original in-game chrome screen (frame, panel, bars, life strip)
     ctx.drawImage(this.assets.sys.SYS003.img, 0, 0);
     // Clear the window, then draw every opaque level tile (including tile 0).

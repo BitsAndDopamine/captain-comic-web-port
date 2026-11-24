@@ -128,6 +128,10 @@
   simulation coordinates or mutate the logical camera. `drawTilemap()` also snaps
   its camera defensively so adjacent atlas blits always have integer destinations.
   This avoids relying on browser-specific subpixel sampling at tile edges.
+  `renderCameraX()` also clamps the rendered view to the map width minus PF.w:
+  the logical final camera1856 exposes4px past a2048px strip in the196px HUD
+  window. Use the same clamped render camera for all layers and fireball bounds;
+  preserve the original logical0..232-unit camera and edge-transition timing.
 - EXE addresses must refer to the **unpacked** 100,208-byte image, never packed
   file−0x200. Use `unpack_exepack()` from `tools/export_audio.py`. Main DS base is
   image 0x2740; SYS loader is 0x0a52 (RLE 0x0a80); area loader is 0x0acc.

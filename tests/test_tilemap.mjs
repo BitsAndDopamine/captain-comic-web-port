@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { drawTilemap } from '../web/src/tilemap.js';
+import { drawTilemap, renderCameraX } from '../web/src/tilemap.js';
 
 test('tile zero is rendered as opaque artwork rather than skipped', () => {
   const calls = [];
@@ -18,12 +18,12 @@ test('tile zero is rendered as opaque artwork rather than skipped', () => {
 test('all eight areas render zero-valued cells, including a scrolled viewport', () => {
   for (const area of ['LAKE', 'SHED', 'BASE', 'CASTLE', 'COMP', 'SPACE', 'FOREST', 'CAVE']) {
     const level = JSON.parse(readFileSync(new URL(`../web/assets/levels/${area}.json`, import.meta.url)));
-    for (const strip of level.strips) for (const camera of [0, 0.2, 0.49, 0.5, 0.8, 15.8, 16.2, 21, 21.4, 1851.8, 1852]) {
+    for (const strip of level.strips) for (const camera of [0, 0.2, 0.49, 0.5, 0.8, 15.8, 16.2, 21, 21.4, 1851.8, 1852, 1855.8, 1856]) {
       const calls = [];
       const world = { ...level, strip, tiles: { img: area, cols: 16 } };
       drawTilemap({ drawImage: (...args) => calls.push(args) }, world,
         { x: 7, y: 7, w: 196 }, camera, 0);
-      const renderCamera = Math.round(camera);
+      const renderCamera = Math.min(Math.round(camera), level.w * 16 - 196);
       const first = Math.max(0, Math.floor(renderCamera / 16));
       const last = Math.min(level.w - 1, Math.ceil((renderCamera + 196) / 16));
       const expected = [];
@@ -35,6 +35,29 @@ test('all eight areas render zero-valued cells, including a scrolled viewport', 
         .map(call => [call[5], call[6]]), expected, area);
     }
   }
+});
+
+test('both strip edges stay covered without changing the logical camera or map', () => {
+  for (const camera of [-8, -0.5, 0, 1848, 1852, 1856, 1864]) {
+    const calls = [], strip = Array(128).fill(3);
+    const world = { w: 128, h: 1, strip, tiles: { img: 'atlas', cols: 16 } };
+    drawTilemap({ drawImage: (...args) => calls.push(args) }, world,
+      { x: 7, y: 7, w: 196 }, camera, 0);
+    const xs = calls.map(call => call[5]);
+    assert.ok(xs[0] <= 7, `left edge covered at ${camera}`);
+    assert.ok(xs.at(-1) + 16 >= 203, `right edge covered at ${camera}`);
+    assert.ok(calls.every(call => call[1] === 48 && call[2] === 0), 'only real map artwork');
+    assert.equal(world.strip, strip);
+    assert.deepEqual(strip, Array(128).fill(3));
+  }
+});
+
+test('render camera is pixel-aligned and clamped to the complete visible width', () => {
+  assert.equal(renderCameraX(1856, 2048, 196), 1852);
+  assert.equal(renderCameraX(1856, 2048, 192), 1856);
+  assert.equal(renderCameraX(-4, 2048, 196), 0);
+  assert.equal(renderCameraX(24.6, 2048, 196), 25);
+  assert.equal(renderCameraX(8, 32, 196), 0);
 });
 
 test('fractional scrolling uses integer, exactly adjacent tile destinations on both axes', () => {

@@ -20,6 +20,11 @@ offset 12 scrolls right one unit. Standing still, turning or hitting a wall neve
 recenters the camera. Strip/door/death initialization centers at sprite X−11 units,
 clamped to those bounds (`0x0ceb..0x0d04`). The original signed right-offset check
 is retained. Rendering still snaps its camera defensively to prevent Firefox seams.
+It also clamps the displayed view to the map bounds: the 196px-wide web window
+stops at render X=1852 on a 2048px strip, avoiding a four-pixel black bar while
+leaving the original logical camera limit of 1856px unchanged. All draw layers
+and the fireball visibility margin share this render camera; physics and strip
+transitions continue using the logical camera.
 
 ## Jump, gravity, Boots and SPACE
 

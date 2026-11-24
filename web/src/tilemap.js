@@ -1,8 +1,13 @@
 // TT2 tiles are opaque, including tile 0 (which is not an empty-cell sentinel).
+// The DOS camera stops at 1856px, but the web HUD window is 196px wide: its
+// final 4px would extend past a 2048px strip. Clamp rendering, not simulation.
+export const renderCameraX = (cameraX, worldWidth, viewWidth) =>
+  Math.max(0, Math.min(Math.round(cameraX), Math.max(0, worldWidth - viewWidth)));
+
 export function drawTilemap(ctx, world, pf, camX, camY) {
   // Adjacent atlas blits must share an integer pixel grid. Subpixel destinations
   // can expose tile-edge seams depending on the browser's canvas/GPU backend.
-  camX = Math.round(camX);
+  camX = renderCameraX(camX, world.w * 16, pf.w);
   camY = Math.round(camY);
   const ts = 16;
   const c0 = Math.max(0, Math.floor(camX / ts));

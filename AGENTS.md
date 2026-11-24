@@ -67,6 +67,15 @@
   black insets, white/dark stepped bevels and monospace text. Avoid rounded modern
   buttons, gradients and non-palette colors. Preserve large touch targets, clear
   pressed/disabled/focus states and responsive non-overlapping layouts.
+- Animation mode: Original tick visuals remain default and un-interpolated. The
+  footer toggle opts into30FPS presentation for the entire canvas, not faster
+  simulation. `animation.js` captures render-only poses for player/enemies/shots
+  and one shared camera; source sprite/effect sequences keep original timing.
+  Do not alter DOS/60Hz clocks or interpolate logical objects. Reset on scene/
+  phase/teleport/spawn boundaries; freeze during pause and keep input polling fast.
+  `captain-comic.animation.v1` persists mode; `__animationMode` exposed. See
+  `docs/animation_modes.md` and `tests/test_animation.mjs`. Keep core Fireball
+  tick/draw behavior original; optional smoothing belongs to `VisualTimeline`.
 - Pause/menu: Esc freezes the run; Continue/another key resumes, Q while paused
   quits to the startup notice (not score submission). Blur/hidden tabs auto-pause.
   `Game.paused` guards all simulation/transitions; menus freeze the startup too.

@@ -24,6 +24,7 @@ your own copy to generate the assets and play locally.
 - Fullscreen/expanded view and large multi-touch controls for mobile play.
 - Startup keyboard remapping and USB/Bluetooth controllers via the Gamepad API.
 - Game-like EGA colors, pixel-art rendering and square, beveled website controls.
+- Original tick-based visuals by default, plus an optional 30 FPS visual mode at unchanged gameplay speed.
 - Reverse-engineering documentation and executable-backed regression tests.
 
 The port is playable but still under development. A complete DOS-versus-web
@@ -85,6 +86,11 @@ ready-to-play distribution.
 Use the footer buttons for fullscreen, touch controls, pause, sound and high
 scores. Touch mode can be enabled manually or automatically on touch devices.
 These browser bindings differ from the original DOS defaults listed below.
+
+**Animation: Original / 30 FPS** switches the whole canvas between original
+tick-based visuals and 30 FPS presentation with smoother sprite motion and
+camera scrolling. Gameplay speed, collision, audio and animation-sequence timing
+do not change. The preference is saved locally. See [Animation modes](docs/animation_modes.md).
 
 At the initial notice, press **K** (or **Keyboard (K)**) to change keyboard
 definitions, or **J** (or **Controller (J)**) to set up a USB/Bluetooth controller.
@@ -174,6 +180,7 @@ Feature and research guides:
 - [Pause and high scores](docs/pause_and_scores.md) and [victory](docs/victory.md)
 - [Colors and transitions](docs/colors_and_transitions.md) and [action sounds](docs/action_sounds.md)
 - [Fullscreen and mobile controls](docs/fullscreen_and_touch.md)
+- [Original and 30 FPS animation modes](docs/animation_modes.md)
 - [Keyboard definitions and controllers](docs/keyboard_and_controllers.md)
 - [Reverse-engineering notes](docs/reverse_engineering.md)
 

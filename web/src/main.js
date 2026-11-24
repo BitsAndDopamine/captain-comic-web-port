@@ -24,6 +24,7 @@ import { Victory, hasAllTreasures } from './victory.js';
 import { createPaletteScreens } from './palette.js';
 import { TouchControls } from './touch_controls.js';
 import { Presentation } from './presentation.js';
+import { AnimationMode, VisualTimeline } from './animation.js';
 
 const VIEW_W = 320, VIEW_H = 200;
 let PF = { x: 7, y: 7, w: 196, h: 162 };      // playfield window (from hud.json, measured on SYS003)
@@ -90,6 +91,7 @@ export class Game {
     this.practice = isPracticeSetup(testOptions);
     this.enemyScheduler = { spawnOffset: 22, respawnDelay: 20 };
     this.victory = null;
+    this.visuals = new VisualTimeline();
     applyTestOptions(this, testOptions);
     this.loadStrip(assets.startup.initialState.strip);
     this.camX = assets.startup.initialState.cameraX;
@@ -106,6 +108,7 @@ export class Game {
     this.dosTickAccumulator += STEP * this.assets.mechanics.victory.timerTicksPerSecond;
     while (this.dosTickAccumulator >= 1) {
       this.dosTickAccumulator--;
+      this.visuals.capture(this);
       this.victory.tick(this.life, event => this.playSound(event));
     }
   }
@@ -116,6 +119,7 @@ export class Game {
   get shield() { return this.life.shield; }
   set shield(value) { this.life.shield = value; }
   loadStrip(stripIndex) {
+    this.visuals.reset();
     this.doorTransition = null; // Debug strip/area changes cancel an in-flight animation.
     this.deathTransition = null;
     this.wandTransition = null;
@@ -285,6 +289,7 @@ export class Game {
     }
   }
   tickDeath() {
+    this.visuals.capture(this);
     const action = this.deathTransition.tick();
     if (action === 'explosion') this.stepExplosion();
     else if (action === 'deathSound') this.playSound('death');
@@ -352,6 +357,7 @@ export class Game {
     this.dosTickAccumulator += STEP * fireball.timerTicksPerSecond;
     while (this.dosTickAccumulator >= 1) {
       this.dosTickAccumulator -= 1;
+      this.visuals.capture(this);
       if (this.victory) {
         this.victory.tick(this.life, event => this.playSound(event));
         if (this.victory.active) { this.wandTransition = null; return; }
@@ -375,9 +381,11 @@ export class Game {
         if (this.weapon > 0) {
           if (this.fireballs.length < this.colas) {
             const origin = fireballOrigin(p, this.assets.sprites.PLAYER, fireball);
-            this.fireballs.push(new Fireball(this.assets.sprites[fireball.sprite],
+            const shot = new Fireball(this.assets.sprites[fireball.sprite],
               origin.x, origin.y, p.facing,
-              this.inventory.has('corkscrew'), fireball));
+              this.inventory.has('corkscrew'), fireball);
+            this.fireballs.push(shot);
+            this.visuals.rememberFireball(shot);
             this.playSound('fire');
           }
           this.weapon = Math.max(0, this.weapon - fireball.energyCostPerShot);
@@ -406,7 +414,7 @@ export class Game {
       this.collectPickups();
     }
   }
-  draw(ctx, now, { showPlayer = true, showEnemies = true } = {}) {
+  draw(ctx, now, { showPlayer = true, showEnemies = true, animationAlpha = this.dosTickAccumulator } = {}) {
     const victory = this.victory;
     if (victory?.stage === 'ending') {
       ctx.drawImage(this.assets.paletteScreens?.[victory.config.endingScreen]?.[victory.paletteStep]
@@ -418,8 +426,10 @@ export class Game {
     const death = this.deathTransition;
     const entitiesVisible = worldActive && !this.runEnded && (!death || death.stage === 'explosion');
     const H = this.assets.hud;
+    const view = this.visuals.sample(this, animationAlpha);
+    const player = view.player;
     // Snap rendering only, once for every layer; physics keeps the precise camera.
-    const camX = renderCameraX(this.camX, this.world.wPx, PF.w), camY = Math.round(this.camY);
+    const camX = renderCameraX(view.camX, this.world.wPx, PF.w), camY = Math.round(view.camY);
     // base: the original in-game chrome screen (frame, panel, bars, life strip)
     ctx.drawImage(this.assets.sys.SYS003.img, 0, 0);
     // Clear the window, then draw every opaque level tile (including tile 0).
@@ -442,24 +452,24 @@ export class Game {
     if (showPlayer && !this.runEnded && (worldActive || victory.playerVisible)
       && deathPlayerVisible && (!doorFrame || doorFrame.player)) {
       if (death?.stage === 'fallCrop') {
-        const position = spritePosition(this.player, this.assets.sprites.PLAYER);
+        const position = spritePosition(player, this.assets.sprites.PLAYER);
         ctx.save(); ctx.beginPath();
         ctx.rect(PF.x, PF.y + position.y - camY, PF.w, death.cropHeight); ctx.clip();
-        this.player.draw(ctx, camX, camY, PF, this.assets.sprites.PLAYER); ctx.restore();
-      } else this.player.draw(ctx, camX, camY, PF, this.assets.sprites.PLAYER);
+        player.draw(ctx, camX, camY, PF, this.assets.sprites.PLAYER); ctx.restore();
+      } else player.draw(ctx, camX, camY, PF, this.assets.sprites.PLAYER);
     }
     if (this.wandTransition) drawWandEffects(ctx, this.assets.sprites.WAND_SHIFT,
       this.wandTransition, PF, camX, this.assets.mechanics.items.wand);
-    if (entitiesVisible && showEnemies) for (const e of this.enemies) e.draw(ctx, PF, camX, camY);
-    if (entitiesVisible && !death) for (const f of this.fireballs) f.draw(ctx, PF, camX, camY);
+    if (entitiesVisible && showEnemies) for (const e of view.enemies) e.draw(ctx, PF, camX, camY);
+    if (entitiesVisible && !death) for (const f of view.fireballs) f.draw(ctx, PF, camX, camY);
     if (explosionFrame >= 0 && explosionFrame < this.assets.sprites.PLAYER_DEATH.frames) {
-      const effect = this.assets.sprites.PLAYER_DEATH, p = this.player;
+      const effect = this.assets.sprites.PLAYER_DEATH, p = player;
       ctx.drawImage(effect.img, explosionFrame * effect.w, 0, effect.w, effect.h,
         Math.round(PF.x + p.x + (p.w - effect.w) / 2 - camX),
         Math.round(PF.y + p.y + p.h - effect.h - camY), effect.w, effect.h);
     }
     if (victory && victory.effectFrame !== null) {
-      const effect = this.assets.sprites[victory.config.effect], p = this.player;
+      const effect = this.assets.sprites[victory.config.effect], p = player;
       ctx.drawImage(effect.img, victory.effectFrame * effect.w, 0, effect.w, effect.h,
         Math.round(PF.x + p.x + (p.w - effect.w) / 2 - camX),
         Math.round(PF.y + p.y + p.h - effect.h - camY), effect.w, effect.h);
@@ -546,8 +556,12 @@ async function main() {
   const scoreStorage = document.getElementById('score-storage');
   const fullscreenButton = document.getElementById('fullscreen');
   const touchButton = document.getElementById('touch-toggle');
+  const animationButton = document.getElementById('animation-toggle');
   let storage = null;
   try { storage = window.localStorage; } catch { /* Private/blocked storage: keep scores in memory. */ }
+  const animationMode = new AnimationMode(storage);
+  game.visuals.enabled = animationMode.smooth;
+  window.__animationMode = animationMode;
   const keyboard = new KeyboardBindings(storage);
   const gamepad = new GamepadInput(storage);
   window.__keyboardBindings = keyboard;
@@ -583,6 +597,10 @@ async function main() {
   soundButton.addEventListener('click', () => {
     audio.setEnabled(!audio.enabled);
     audio.unlock();
+  });
+  animationButton.addEventListener('click', () => {
+    animationMode.toggle(); game.visuals.enabled = animationMode.smooth; game.visuals.reset();
+    if (!startup.active && !menu.frozen) canvas.focus();
   });
   pauseButton.addEventListener('click', pauseGame);
   scoresButton.addEventListener('click', () => {
@@ -674,6 +692,10 @@ async function main() {
     soundButton.hidden = isScores;
     fullscreenButton.hidden = isScores;
     touchButton.hidden = isScores;
+    animationButton.hidden = isScores;
+    animationButton.textContent = animationMode.smooth ? 'Animation: 30 FPS' : 'Animation: Original';
+    animationButton.setAttribute('aria-pressed', String(animationMode.smooth));
+    animationButton.title = `Visuals only; original gameplay speed and timing.${animationMode.warning ? ' Setting is kept in this tab only.' : ''}`;
     soundButton.textContent = audio.failed ? 'Sound unavailable' : `Sound: ${audio.enabled ? 'on' : 'off'}`;
     soundButton.setAttribute('aria-pressed', String(!audio.enabled));
     if (isScores) {
@@ -751,7 +773,7 @@ async function main() {
     game.player.jumpQueued = false;
     gamepad.reset(); padState = {};
   }
-  function resetClock() { acc = 0; last = performance.now(); }
+  function resetClock() { acc = 0; last = performance.now(); animationMode.invalidate(); }
   function freezeInput() { clearInput(); resetClock(); audio.stop(); syncMenu(); }
   function pauseGame() {
     if (startup.active || game.runEnded || !menu.pause()) return;
@@ -781,6 +803,7 @@ async function main() {
   function restartGame() {
     audio.stop();
     game = new Game(assets, audio, testOptions);
+    game.visuals.enabled = animationMode.smooth;
     window.__game = game;
     menu.reset(); clearInput(); resetClock(); syncMenu();
     gameRenderTime = 0;
@@ -925,7 +948,7 @@ async function main() {
       teleportPressed = false;
       acc -= STEP;
     }
-    drawOpening(now);
+    if (animationMode.shouldDraw(now)) drawOpening(now);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
